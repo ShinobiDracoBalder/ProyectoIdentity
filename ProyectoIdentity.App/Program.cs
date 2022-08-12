@@ -1,7 +1,17 @@
+using Microsoft.EntityFrameworkCore;
+using ProyectoIdentity.Common.DataBase;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddRazorRuntimeCompilation();
+
+//Configuramos la conexión a sql server
+builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
+    opciones.UseSqlServer(builder.Configuration.GetConnectionString("ConexionSql"))
+);
+
 
 var app = builder.Build();
 
