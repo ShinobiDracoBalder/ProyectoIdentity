@@ -23,14 +23,14 @@
             </a>
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                 <li class="nav-item">
-                    <a class="nav-link text-dark" href="">Hola, @UserManager.GetUserName(User)</a>
+                    <a class="nav-link text-dark" href=""> <i class="bi bi-hand-thumbs-up"></i> Hola, @UserManager.GetUserName(User)</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-dark" asp-area="" asp-controller="Usuarios" asp-action="EditarPerfil" asp-route-id="@UserManager.GetUserId(User)">Editar Perfil</a>
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Usuarios" asp-action="EditarPerfil" asp-route-id="@UserManager.GetUserId(User)"> <i class="bi bi-person-square"></i> Editar Perfil</a>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <li class="nav-item">
-                    <a class="nav-link text-dark" asp-area="" asp-controller="Usuarios" asp-action="CambiarPassword">Cambiar Contraseña</a>
+                    <a class="nav-link text-dark" asp-area="" asp-controller="Usuarios" asp-action="CambiarPassword"><i class="bi bi-toggle2-on"></i> Cambiar Contraseña</a>
                 </li>
             </ul>
         </li>
@@ -38,7 +38,7 @@
 
         <li class="nav-item">
             <form id="logoutForm" method="post" class="form-inline" asp-controller="Cuentas" asp-action="SalirAplicacion">
-                <button type="submit" class="btn nav-link">Salir</button>
+                <button type="submit" class="btn nav-link"> <i class="bi bi-box-arrow-in-right"></i> Salir</button>
             </form>
         </li>
     }
@@ -46,10 +46,10 @@
     {
 
         <li class="nav-item">
-            <a class="nav-link text-white" asp-area="" asp-controller="Cuentas" asp-action="Registro">Registro</a>
+            <a class="nav-link text-white" asp-area="" asp-controller="Cuentas" asp-action="Registro"> <i class="bi bi-person-bounding-box"></i> Registro</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link text-white" asp-area="" asp-controller="Cuentas" asp-action="Acceso">Acceder</a>
+            <a class="nav-link text-white" asp-area="" asp-controller="Cuentas" asp-action="Acceso"> <i class="bi bi-door-open-fill"></i> Acceder</a>
         </li>
     }
 

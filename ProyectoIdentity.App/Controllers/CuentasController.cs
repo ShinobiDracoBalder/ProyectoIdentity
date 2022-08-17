@@ -140,6 +140,16 @@ namespace ProyectoIdentity.App.Controllers
 
             return View(accViewModel);
         }
+
+        //Salir o cerrar sesión de la aplicacion (logout)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SalirAplicacion()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction(nameof(HomeController.Index), "Home");
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> VerificarCodigoAutenticador(bool recordarDatos, string returnurl = null)
@@ -181,13 +191,15 @@ namespace ProyectoIdentity.App.Controllers
             }
         }
 
-        //Salir o cerrar sesión de la aplicacion (logout)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SalirAplicacion()
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Denegado(string returnurl = null)
         {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction(nameof(HomeController.Index), "Home");
+            ViewData["ReturnUrl"] = returnurl;
+            returnurl = returnurl ?? Url.Content("~/");
+            return View();
         }
+
+
     }
 }

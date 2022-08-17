@@ -17,6 +17,22 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+//Esta línea es para la url de retorno al acceder
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = new PathString("/Cuentas/Acceso");
+    options.AccessDeniedPath = new PathString("/Cuentas/Denegado");
+});
+
+//Estas son opciones de configuración del identity
+//builder.Services.Configure<IdentityOptions>(options =>
+//{
+//    options.Password.RequiredLength = 5;
+//    options.Password.RequireLowercase = true;
+//    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
+//    options.Lockout.MaxFailedAccessAttempts = 3;
+//});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
