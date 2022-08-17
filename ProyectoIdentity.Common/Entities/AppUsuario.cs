@@ -14,6 +14,9 @@ namespace ProyectoIdentity.Common.Entities
         public string Telefono { get; set; }
         public string Pais { get; set; }
         public string Ciudad { get; set; }
+        [DataType(DataType.MultilineText)]
+        [MaxLength(512)]
+        [Display(Name = "Direccion")]
         public string Direccion { get; set; }
         public DateTime FechaNacimiento { get; set; }
         public bool Estado { get; set; }
