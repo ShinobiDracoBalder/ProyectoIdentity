@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using ProyectoIdentity.App.Servicios;
 using ProyectoIdentity.Common.DataBase;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,13 +27,29 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 //Estas son opciones de configuración del identity
-//builder.Services.Configure<IdentityOptions>(options =>
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequiredLength = 5;
+    options.Password.RequireLowercase = true;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
+    options.Lockout.MaxFailedAccessAttempts = 3;
+});
+//Agregar autenticación de facebook
+builder.Services.AddAuthentication().AddFacebook(options =>
+{
+    options.AppId = "617147826794163";
+    options.AppSecret = "8d61c957c5d2ab25bae714f1ee5fe391";
+});
+
+////Agregar autenticación de google
+//builder.Services.AddAuthentication().AddGoogle(options =>
 //{
-//    options.Password.RequiredLength = 5;
-//    options.Password.RequireLowercase = true;
-//    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
-//    options.Lockout.MaxFailedAccessAttempts = 3;
+//    options.ClientId = "228603965289-ce9gi69u2pp3m19em861lhjiepfnhav0.apps.googleusercontent.com";
+//    options.ClientSecret = "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";
 //});
+
+//Se agregar IEmailSender
+builder.Services.AddTransient<IEmailSender, MailJetEmailSender>();
 
 var app = builder.Build();
 

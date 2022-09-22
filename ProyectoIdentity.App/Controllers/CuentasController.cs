@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using ProyectoIdentity.App.Models;
 using ProyectoIdentity.Common.Entities;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 
 namespace ProyectoIdentity.App.Controllers
@@ -11,13 +14,15 @@ namespace ProyectoIdentity.App.Controllers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IEmailSender _emailSender;
         private readonly UrlEncoder _urlEncoder;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public CuentasController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, UrlEncoder urlEncoder, RoleManager<IdentityRole> roleManager)
+        public CuentasController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IEmailSender emailSender, UrlEncoder urlEncoder, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _emailSender = emailSender;
             _urlEncoder = urlEncoder;
             _roleManager = roleManager;
         }
@@ -71,10 +76,10 @@ namespace ProyectoIdentity.App.Controllers
 
 
                     //Implementación de confirmación de email en el registro
-                    //var code = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
-                    //var urlRetorno = Url.Action("ConfirmarEmail", "Cuentas", new { userId = usuario.Id, code = code }, protocol: HttpContext.Request.Scheme);
-                    //await _emailSender.SendEmailAsync(rgViewModel.Email, "Confirmar su cuenta - Proyecto Identity",
-                    //"Por favor confirme su cuenta dando click aquí: <a href=\"" + urlRetorno + "\">enlace</a>");
+                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
+                    var urlRetorno = Url.Action("ConfirmarEmail", "Cuentas", new { userId = usuario.Id, code = code }, protocol: HttpContext.Request.Scheme);
+                    await _emailSender.SendEmailAsync(rgViewModel.Email, "Confirmar su cuenta - Proyecto Identity",
+                    "Por favor confirme su cuenta dando click aquí: <a href=\"" + urlRetorno + "\">enlace</a>");
 
 
                     await _signInManager.SignInAsync(usuario, isPersistent: false);
@@ -87,6 +92,112 @@ namespace ProyectoIdentity.App.Controllers
 
             return View(rgViewModel);
         }
+
+        //Registro especial solo para los administrador
+        [HttpGet]
+        public async Task<IActionResult> RegistroAdministrador(string returnurl = null)
+        {
+            //Para la creación de los roles
+            if (!await _roleManager.RoleExistsAsync("Administrador"))
+            {
+                //Creación de rol usuario Administrador
+                await _roleManager.CreateAsync(new IdentityRole("Administrador"));
+            }
+
+            //Para la creación de los roles
+            if (!await _roleManager.RoleExistsAsync("Registrado"))
+            {
+                //Creación de rol usuario Registrado
+                await _roleManager.CreateAsync(new IdentityRole("Registrado"));
+            }
+
+            //Para selección de rol
+            List<SelectListItem> listaRoles = new List<SelectListItem>();
+            listaRoles.Add(new SelectListItem()
+            {
+                Value = "Registrado",
+                Text = "Registrado"
+            });
+
+            listaRoles.Add(new SelectListItem()
+            {
+                Value = "Administrador",
+                Text = "Administrador"
+            });
+
+
+
+            ViewData["ReturnUrl"] = returnurl;
+            RegistroViewModel registroVM = new RegistroViewModel()
+            {
+                ListaRoles = listaRoles
+            };
+            return View(registroVM);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegistroAdministrador(RegistroViewModel rgViewModel, string returnurl = null)
+        {
+            ViewData["ReturnUrl"] = returnurl;
+            returnurl = returnurl ?? Url.Content("~/");
+            if (ModelState.IsValid)
+            {
+                var usuario = new AppUsuario { UserName = rgViewModel.Email, Email = rgViewModel.Email, Nombre = rgViewModel.Nombre, Url = rgViewModel.Url, CodigoPais = rgViewModel.CodigoPais, Telefono = rgViewModel.Telefono, Pais = rgViewModel.Pais, Ciudad = rgViewModel.Ciudad, Direccion = rgViewModel.Direccion, FechaNacimiento = rgViewModel.FechaNacimiento, Estado = rgViewModel.Estado };
+                var resultado = await _userManager.CreateAsync(usuario, rgViewModel.Password);
+
+                if (resultado.Succeeded)
+                {
+                    //Para selección de rol en el registro
+                    if (rgViewModel.RolSeleccionado != null && rgViewModel.RolSeleccionado.Length > 0 && rgViewModel.RolSeleccionado == "Administrador")
+                    {
+                        await _userManager.AddToRoleAsync(usuario, "Administrador");
+                    }
+                    else
+                    {
+                        await _userManager.AddToRoleAsync(usuario, "Registrado");
+                    }
+
+
+
+                    //Esta línea es para la asignación del usuario que se registra al rol "Registrado"
+                    await _userManager.AddToRoleAsync(usuario, "Registrado");
+
+
+                    //Implementación de confirmación de email en el registro
+                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
+                    var urlRetorno = Url.Action("ConfirmarEmail", "Cuentas", new { userId = usuario.Id, code = code }, protocol: HttpContext.Request.Scheme);
+                    await _emailSender.SendEmailAsync(rgViewModel.Email, "Confirmar su cuenta - Proyecto Identity",
+                    "Por favor confirme su cuenta dando click aquí: <a href=\"" + urlRetorno + "\">enlace</a>");
+
+
+                    await _signInManager.SignInAsync(usuario, isPersistent: false);
+                    //return RedirectToAction("Index", "Home");
+                    return LocalRedirect(returnurl);
+                }
+
+                ValidarErrores(resultado);
+            }
+
+            //Para selección de rol
+            List<SelectListItem> listaRoles = new List<SelectListItem>();
+            listaRoles.Add(new SelectListItem()
+            {
+                Value = "Registrado",
+                Text = "Registrado"
+            });
+
+            listaRoles.Add(new SelectListItem()
+            {
+                Value = "Administrador",
+                Text = "Administrador"
+            });
+
+            rgViewModel.ListaRoles = listaRoles;
+
+            return View(rgViewModel);
+        }
+
 
         [AllowAnonymous]
         //Manejador de errores
@@ -150,6 +261,39 @@ namespace ProyectoIdentity.App.Controllers
             return RedirectToAction(nameof(HomeController.Index), "Home");
         }
 
+        //Método para olvido de contraseña
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult OlvidoPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AllowAnonymous]
+        public async Task<IActionResult> OlvidoPassword(OlvidoPasswordViewModel opViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var usuario = await _userManager.FindByEmailAsync(opViewModel.Email);
+                if (usuario == null)
+                {
+                    return RedirectToAction("ConfirmacionOlvidoPassword");
+                }
+
+                var codigo = await _userManager.GeneratePasswordResetTokenAsync(usuario);
+                var urlRetorno = Url.Action("ResetPassword", "Cuentas", new { userId = usuario.Id, code = codigo }, protocol: HttpContext.Request.Scheme);
+
+                await _emailSender.SendEmailAsync(opViewModel.Email, "Recuperar contraseña - Proyecto Identity",
+                    "Por favor recupere su contraseña dando click aquí: <a href=\"" + urlRetorno + "\">enlace</a>");
+
+                return RedirectToAction("ConfirmacionOlvidoPassword");
+            }
+
+            return View(opViewModel);
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> VerificarCodigoAutenticador(bool recordarDatos, string returnurl = null)
@@ -200,6 +344,154 @@ namespace ProyectoIdentity.App.Controllers
             return View();
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ConfirmacionOlvidoPassword()
+        {
+            return View();
+        }
 
+        //Funcionalidad para recuperar contraseña
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ResetPassword(string code = null)
+        {
+            return code == null ? View("Error") : View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(RecuperaPasswordViewModel rpViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var usuario = await _userManager.FindByEmailAsync(rpViewModel.Email);
+                if (usuario == null)
+                {
+                    return RedirectToAction("ConfirmacionRecuperaPassword");
+                }
+
+                var resultado = await _userManager.ResetPasswordAsync(usuario, rpViewModel.Code, rpViewModel.Password);
+                if (resultado.Succeeded)
+                {
+                    return RedirectToAction("ConfirmacionRecuperaPassword");
+                }
+
+
+                ValidarErrores(resultado);
+            }
+
+            return View(rpViewModel);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ConfirmacionRecuperaPassword()
+        {
+            return View(); ;
+        }
+
+        //Método para confirmación de email en el registro
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmarEmail(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
+                return View("Error");
+            }
+
+            var usuario = await _userManager.FindByIdAsync(userId);
+            if (usuario == null)
+            {
+                return View("Error");
+            }
+
+            var resultado = await _userManager.ConfirmEmailAsync(usuario, code);
+            return View(resultado.Succeeded ? "ConfirmarEmail" : "Error");
+        }
+
+        //Configuración de acceso externo: facebook, google, twitter, etc
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public IActionResult AccesoExterno(string proveedor, string returnurl = null)
+        {
+            var urlRedireccion = Url.Action("AccesoExternoCallback", "Cuentas", new { ReturnUrl = returnurl });
+            var propiedades = _signInManager.ConfigureExternalAuthenticationProperties(proveedor, urlRedireccion);
+            return Challenge(propiedades, proveedor);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> AccesoExternoCallback(string returnurl = null, string error = null)
+        {
+            returnurl = returnurl ?? Url.Content("~/");
+            if (error != null)
+            {
+                ModelState.AddModelError(string.Empty, $"Error en el acceso externo {error}");
+                return View(nameof(Acceso));
+            }
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                return RedirectToAction(nameof(Acceso));
+            }
+
+            //Acceder con el usuario en el proveedor externo
+            var resultado = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+            if (resultado.Succeeded)
+            {
+                //Actrualizar los tokens de acceso
+                await _signInManager.UpdateExternalAuthenticationTokensAsync(info);
+                return LocalRedirect(returnurl);
+            }
+            else
+            {
+                //Si el usuario no tiene cuenta pregunta si quier crear una
+                ViewData["ReturnUrl"] = returnurl;
+                ViewData["NombreAMostrarProveedor"] = info.ProviderDisplayName;
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                var nombre = info.Principal.FindFirstValue(ClaimTypes.Name);
+                return View("ConfirmacionAccesoExterno", new ConfirmacionAccesoExternoViewModel { Email = email, Name = nombre });
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmacionAccesoExterno(ConfirmacionAccesoExternoViewModel caeViewModel, string returnurl = null)
+        {
+            returnurl = returnurl ?? Url.Content("~/");
+
+            if (ModelState.IsValid)
+            {
+                //Obtener la información del usuario del proveedor externo
+                var info = await _signInManager.GetExternalLoginInfoAsync();
+                if (info == null)
+                {
+                    return View("Error");
+                }
+
+                var usuario = new AppUsuario { UserName = caeViewModel.Email, Email = caeViewModel.Email, Nombre = caeViewModel.Name };
+                var resultado = await _userManager.CreateAsync(usuario);
+                if (resultado.Succeeded)
+                {
+                    resultado = await _userManager.AddLoginAsync(usuario, info);
+                    if (resultado.Succeeded)
+                    {
+                        await _signInManager.SignInAsync(usuario, isPersistent: false);
+                        await _signInManager.UpdateExternalAuthenticationTokensAsync(info);
+                        return LocalRedirect(returnurl);
+                    }
+                }
+                ValidarErrores(resultado);
+            }
+            ViewData["ReturnUrl"] = returnurl;
+            return View(caeViewModel);
+        }
     }
 }

@@ -10,8 +10,6 @@
 <div class="card">
     <div class="card-body">
         <h3 class="card-title text-center">Acceso de usuario</h3>
-
-
         <div class="row mt-4">
             <div class="col-sm-6">
                 <form asp-controller="Cuentas" asp-action="Acceso" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
@@ -65,7 +63,7 @@
                                 {
                                     @if (proveedor.Name == "Facebook")
                                     {
-                                        <button type="submit" class="btn btn-primary w-100" name="proveedor" value="@proveedor.Name" title="Acceda usando su cuenta @proveedor.Name"><i class="bi bi-facebook"></i> @proveedor.Name</button>
+                                        <button type="submit" class="btn btn-outline-primary w-100" name="proveedor" value="@proveedor.Name" title="Acceda usando su cuenta @proveedor.Name"><i class="bi bi-facebook"></i> @proveedor.Name</button>
                                     }
 
                                     @if (proveedor.Name == "Google")
@@ -80,7 +78,7 @@
             }
         </div>
     </div>
-
+</div>
     @section Scripts{
         @{
             await Html.RenderPartialAsync("_ValidationScriptsPartial");

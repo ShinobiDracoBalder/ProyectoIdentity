@@ -40,6 +40,7 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            <partial name="_BusyIndicatorPartial" />
             @RenderBody()
         </main>
     </div>
@@ -50,6 +51,7 @@
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jasny/jasny-bootstrap.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <!--JS para jquery ui datepicker-->
@@ -64,6 +66,16 @@
                 dateFormat: 'yy-mm-dd'
             })
         })
+    </script>
+    <script>
+        function displayBusyIndicator() {
+            $('.loading').show();
+        }
+    </script>
+    <script>
+        $(window).on('beforeunload', function () {
+            displayBusyIndicator();
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
